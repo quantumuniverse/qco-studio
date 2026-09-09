@@ -6,3 +6,5 @@ out/
 python/__pycache__/
 python/.venv/
 python/*.json
+.docs
+tools

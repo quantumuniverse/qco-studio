@@ -5,6 +5,15 @@
   "version": "0.1.0",
   "publisher": "qco",
   "license": "MIT",
+  "icon": "resources/icon-128.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension/issues"
+  },
+  "homepage": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension#readme",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -71,7 +80,7 @@
     "compile": "webpack --mode production",
     "watch": "webpack --watch --mode development",
     "package": "npm run build:webview && webpack --mode production --devtool hidden-source-map",
-    "vsce:package": "vsce package --allow-missing-repository",
+    "vsce:package": "vsce package",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
