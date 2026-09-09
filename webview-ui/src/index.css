@@ -1,0 +1,245 @@
+:root {
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+  color: var(--vscode-foreground, #cccccc);
+  background-color: var(--vscode-editor-background, transparent);
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  background-color: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover {
+  background-color: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.hint {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+/* --- 回放控制栏（VSCode 原生风格） --- */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.controls-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.controls-slider {
+  flex: 1;
+  accent-color: var(--vscode-progressBar-background, #0e70c0);
+  background: transparent;
+  cursor: pointer;
+}
+
+.controls-slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.controls-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--vscode-editorWidget-border, #3c3c3c);
+}
+
+.controls-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--vscode-progressBar-background, #0e70c0);
+  border: none;
+}
+
+.controls-label {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* --- 电路图 --- */
+.circuit {
+  width: 100%;
+}
+
+.circuit-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+}
+
+.circuit-scroll canvas {
+  display: block;
+  cursor: pointer;
+}
+
+/* --- Bloch 球 --- */
+.bloch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+.bloch-cell {
+  flex: 1 1 150px;
+  max-width: 220px;
+  height: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+}
+
+.bloch-cell canvas {
+  width: 100%;
+  height: 160px;
+}
+
+.bloch-label {
+  font-size: 12px;
+  opacity: 0.8;
+  padding-bottom: 6px;
+}
+
+/* --- 热力图 --- */
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.heatmap-canvas-wrap {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+}
+
+.heatmap-canvas-wrap canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+.heatmap-tooltip {
+  position: absolute;
+  transform: translate(8px, -50%);
+  padding: 2px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  color: var(--vscode-editor-foreground, #cccccc);
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 3px;
+}
+
+/* 态空间尺子 */
+.ruler {
+  margin-left: 36px;
+}
+
+.ruler-track {
+  position: relative;
+  height: 18px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-editorWidget-border, #454545);
+  border-radius: 3px;
+}
+
+.selection-window {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--vscode-charts-orange, #ff9f1c);
+  opacity: 0.35;
+  cursor: grab;
+}
+
+.drag-area {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.handle {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--vscode-charts-orange, #ff9f1c);
+  cursor: ew-resize;
+}
+
+.handle.left {
+  left: 0;
+}
+
+.handle.right {
+  right: 0;
+}
+
+.ruler-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+/* --- 纠缠图 --- */
+.entanglement {
+  width: 100%;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+}
+
+.entanglement svg {
+  display: block;
+  width: 100%;
+  height: 200px;
+}

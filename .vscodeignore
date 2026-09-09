@@ -1,0 +1,35 @@
+.vscode/**
+.vscode-test/**
+.github/**
+.git/**
+.gitignore
+.gitattributes
+
+# 源码与构建中间产物（运行时只需要 dist/extension.js 与 out/webview 产物）
+node_modules/**
+webview-ui/**
+src/**
+**/*.ts
+**/*.map
+out/test/**
+dist/*.map
+tsconfig.json
+webpack.config.js
+
+# 后端运行产生的 IR 导出文件
+python/*.json
+
+# Python 缓存与虚拟环境
+**/__pycache__/**
+python/.venv/**
+python/**/*.pyc
+
+# 文档与示例（不随插件分发）
+examples/**
+PRD.md
+TDD.md
+prompts.md
+
+# 其它
+*.vsix
+**/*.log

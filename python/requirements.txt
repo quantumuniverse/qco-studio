@@ -1,0 +1,2 @@
+quantum-circuit-observer>=0.1.0
+qiskit>=1.0.0

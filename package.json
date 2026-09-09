@@ -1,0 +1,87 @@
+{
+  "name": "qco-vscode-plugin",
+  "displayName": "QCO: Quantum Circuit Observer",
+  "description": "Visualize quantum circuit evolution step by step inside VSCode (circuit / bloch / heatmap / entanglement views).",
+  "version": "0.1.0",
+  "publisher": "qco",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:python"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "qco",
+          "title": "QCO",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "qco": [
+        {
+          "id": "qcoMetadata",
+          "name": "QCO Metadata"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "qco.showPanel",
+        "title": "QCO: Show Panel"
+      },
+      {
+        "command": "qco.observe",
+        "title": "QCO: Observe Current Circuit"
+      },
+      {
+        "command": "qco.check",
+        "title": "QCO: Check Python Environment"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.codeLens": true
+    },
+    "configuration": {
+      "title": "QCO",
+      "properties": {
+        "qco.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to the python interpreter used to run python/backend.py (e.g. python, python3, or an absolute path)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "build:webview": "npm --prefix webview-ui run build",
+    "watch:webview": "npm --prefix webview-ui run watch",
+    "build": "npm run build:webview && npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --watch --mode development",
+    "package": "npm run build:webview && webpack --mode production --devtool hidden-source-map",
+    "vsce:package": "vsce package --allow-missing-repository",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@vscode/vsce": "^2.24.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/test-electron": "^2.3.9",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}

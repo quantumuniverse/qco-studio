@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "build",
+      "problemMatcher": ["$ts-webpack", "$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "type": "npm",
+      "script": "build:webview",
+      "problemMatcher": ["$tsc"],
+      "group": "build"
+    },
+    {
+      "type": "npm",
+      "script": "compile",
+      "problemMatcher": "$ts-webpack",
+      "group": "build"
+    },
+    {
+      "type": "npm",
+      "script": "watch",
+      "problemMatcher": "$ts-webpack-watch",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": "build"
+    },
+    {
+      "type": "npm",
+      "script": "watch:webview",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": "build"
+    }
+  ]
+}
