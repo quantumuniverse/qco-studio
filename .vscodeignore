@@ -12,6 +12,7 @@ src/**
 **/*.ts
 **/*.map
 out/test/**
+out/extension/**
 dist/*.map
 tsconfig.json
 webpack.config.js
@@ -25,12 +26,19 @@ python/.venv/**
 python/**/*.pyc
 
 # 文档与示例（不随插件分发）
+# 只保留 README.md 与 CHANGELOG.md（Marketplace 需要）
 examples/**
-PRD.md
-TDD.md
-prompts.md
+.docs/**
+*.md
+!README.md
+!CHANGELOG.md
+
+# Webview 的 index.html 由扩展端（src/panel/manager.ts）生成，产物中的那份不需要
+out/webview/index.html
 
 # 其它
 *.vsix
 **/*.log
 tools/**
+package-lock.json
+**/*.pyc

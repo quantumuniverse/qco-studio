@@ -21,14 +21,23 @@
 
 ## 前置依赖
 
-插件通过子进程调用 `python/backend.py`，需要：
+插件通过子进程调用 `python/backend.py`，需要 Python 3.10+ 与下列包。
+
+> **安装 `.vsix` 不会自动安装 Python 依赖**，请先手动执行（建议在虚拟环境中）：
 
 ```bash
-pip install -r python/requirements.txt   # quantum-circuit-observer、qiskit
+# 直接安装（推荐，不依赖仓库文件）
+pip install quantum-circuit-observer qiskit
+
+# 或克隆仓库后按清单安装
+pip install -r python/requirements.txt
 ```
 
-若 Python 不在 PATH 中，在设置里指定 `qco.pythonPath`（可为绝对路径）。
-可执行 `QCO: Check Python Environment` 做环境自检。
+若 Python 不在 PATH 中，或使用了虚拟环境，在设置里把 `qco.pythonPath` 设为解释器绝对路径，例如
+`C:\Users\me\.venvs\qco\Scripts\python.exe`。
+
+安装后可执行 `QCO: Check Python Environment` 自检；若依赖缺失就点 `▶ Observe`，
+会弹出提示与「打开终端安装依赖」按钮，点击即可自动填好安装命令。
 
 ## 命令
 
@@ -40,17 +49,20 @@ pip install -r python/requirements.txt   # quantum-circuit-observer、qiskit
 
 ## 示例
 
-`examples/demo.py` 是一个 Grover 搜索示例（4 比特搜索空间中找十进制 13 = `0b1101`，3 次迭代）：
+把下面内容存成任意 `.py` 文件，打开后点击 `qc` 上方的 **▶ Observe** 即可（最小验证用）：
 
 ```python
 from qiskit import QuantumCircuit
 
-qc = QuantumCircuit(5, name="grover_13")
-qc.h(range(4))
-# ... Grover 迭代（oracle + diffuser）
+qc = QuantumCircuit(2, name="bell")
+qc.h(0)
+qc.cx(0, 1)
 ```
 
+仓库中的 `examples/demo.py` 是更完整的 Grover 搜索示例（4 比特搜索空间中找十进制 13 = `0b1101`，3 次迭代）：
 观测后末步 `P(|1101⟩) ≈ 0.96`，回放时能看到振幅逐步集中、纠缠随多控门周期性出现。
+
+> `.vsix` 中不含 `examples/`，需要的话请从仓库获取该文件。
 
 ## 开发
 
@@ -65,10 +77,24 @@ npm run watch               # 扩展 watch 模式
 npm run watch:webview       # Webview watch 模式
 
 npm run package             # 生产构建（hidden source map）
-npx vsce package            # 打包为 .vsix
+npm run vsce:package        # 打包为 .vsix（约 360 KB）
 ```
 
 按 <kbd>F5</kbd> 启动调试（Extension Development Host）。
+
+`.vsix` 只含运行时必需的文件，其余由 `.vscodeignore` 排除（源码 `src/`、`webview-ui/`、`node_modules/`、
+文档 `.docs/`、`examples/`、`tools/`、source map、`out/webview/index.html` 等）：
+
+```
+extension/
+├─ package.json  README.md  CHANGELOG.md  LICENSE
+├─ dist/extension.js
+├─ out/webview/{index.js, index.css}
+├─ python/{backend.py, requirements.txt}
+└─ resources/{icon-128.png, icon.svg}
+```
+
+其中 `out/webview/index.js` 占绝大部分体积（Three.js + D3 + React）。
 
 ## 架构
 

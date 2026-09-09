@@ -5,13 +5,17 @@
     "lib": [
       "ES2020"
     ],
-    "outDir": "out",
+    "outDir": "out/extension",
     "rootDir": "src",
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "node",
+      "vscode"
+    ]
   },
   "include": [
     "src/**/*.ts"
