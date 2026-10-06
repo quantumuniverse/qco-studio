@@ -8,3 +8,4 @@ python/.venv/
 python/*.json
 .docs
 tools
+.qoder/
