@@ -9,10 +9,10 @@ const DEFAULT_VARIABLE_NAME = 'qc';
 const INSTALL_ACTION = '打开终端安装依赖';
 
 export function activate(context: vscode.ExtensionContext): void {
-    console.log('Extension activated: qco-vscode-plugin');
+    console.log('Extension activated: qco-studio');
 
     const channel = vscode.window.createOutputChannel('QCO');
-    channel.appendLine('Extension activated: qco-vscode-plugin');
+    channel.appendLine('Extension activated: qco-studio');
 
     const metadataProvider = new QCOMetadataProvider();
     const panelManager = new QCOWebviewManager(context.extensionUri, (step) =>
@@ -160,5 +160,5 @@ function resolveTarget(
 }
 
 export function deactivate(): void {
-    console.log('Extension deactivated: qco-vscode-plugin');
+    console.log('Extension deactivated: qco-studio');
 }

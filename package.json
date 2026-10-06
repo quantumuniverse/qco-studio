@@ -1,5 +1,5 @@
 {
-  "name": "qco-vscode-plugin",
+  "name": "qco-studio",
   "displayName": "QCO: Quantum Circuit Observer",
   "description": "Visualize quantum circuit evolution step by step inside VSCode (circuit / bloch / heatmap / entanglement views).",
   "version": "0.1.0",
@@ -8,12 +8,12 @@
   "icon": "resources/icon-128.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension.git"
+    "url": "https://github.com/quantumuniverse/qco-studio.git"
   },
   "bugs": {
-    "url": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension/issues"
+    "url": "https://github.com/quantumuniverse/qco-studio/issues"
   },
-  "homepage": "https://github.com/quantumuniverse/quantum-debugger-vscode-extension#readme",
+  "homepage": "https://github.com/quantumuniverse/qco-studio#readme",
   "engines": {
     "vscode": "^1.80.0"
   },

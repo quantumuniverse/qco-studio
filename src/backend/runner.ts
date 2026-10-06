@@ -173,9 +173,9 @@ export async function checkEnvironment(
     try {
         const parsed = JSON.parse(payload) as {
             status?: string;
-            data?: { python?: string; quantum_circuit_observer?: string };
+            data?: { python?: string; qco_engine?: string };
         };
-        const dependency = parsed.data?.quantum_circuit_observer ?? 'unknown';
+        const dependency = parsed.data?.qco_engine ?? 'unknown';
 
         if (dependency.startsWith('missing')) {
             return {
@@ -188,7 +188,7 @@ export async function checkEnvironment(
         return {
             issue: 'ok',
             pythonPath: python,
-            message: `Python ${parsed.data?.python ?? '?'} · quantum-circuit-observer ${
+            message: `Python ${parsed.data?.python ?? '?'} · qco-engine ${
                 dependency === 'unknown' ? '已安装' : dependency
             }`
         };

@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit
-from quantum_circuit_observer import QCObserver, export_to_json
+from qco_engine import QCObserver, export_to_json
 from qiskit.circuit.library import MCXGate
 
 # qc = QuantumCircuit(2)

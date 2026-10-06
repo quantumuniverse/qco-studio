@@ -1,4 +1,6 @@
-# QCO: Quantum Circuit Observer
+# QCO Studio：Quantum Circuit Observer
+
+> **QCO 系列**：量子线路观察器（Quantum Circuit Observer）家族的 **VSCode 扩展**。在 IDE 里逐门回放量子线路执行。
 
 在 VSCode 中**逐门回放**量子线路的执行过程，用四个联动视图把量子态演化“看”出来。
 
@@ -27,7 +29,7 @@
 
 ```bash
 # 直接安装（推荐，不依赖仓库文件）
-pip install quantum-circuit-observer qiskit
+pip install qco-engine qiskit
 
 # 或克隆仓库后按清单安装
 pip install -r python/requirements.txt
