@@ -1,11 +1,35 @@
+import type { StepData } from '../types';
+
 export interface BlochVector {
   x: number;
   y: number;
   z: number;
 }
 
+/** Bloch 向量数据来源：engine = IR 携带的引擎计算值；computed = 前端由态向量现场补算 */
+export type BlochSource = 'engine' | 'computed';
+
 /**
- * 由完整态向量计算每个 qubit 的 Bloch 向量 (x, y, z)。
+ * 取某一步的每 qubit Bloch 向量：优先消费 engine 经 IR 下发的 bloch_vectors，
+ * 仅当其缺失/不完整（旧后端、旧 IR payload）时才回退到 getBlochVectors 前端补算。
+ */
+export function resolveBlochVectors(
+  step: StepData,
+  numQubits: number
+): { vectors: BlochVector[]; source: BlochSource } {
+  const fromEngine = step.bloch_vectors;
+  if (fromEngine && fromEngine.length === numQubits) {
+    return {
+      vectors: fromEngine.map(([x, y, z]) => ({ x, y, z })),
+      source: 'engine'
+    };
+  }
+  return { vectors: getBlochVectors(step.statevector, numQubits), source: 'computed' };
+}
+
+/**
+ * 由完整态向量计算每个 qubit 的 Bloch 向量 (x, y, z)。仅作 fallback：
+ * IR 未携带 bloch_vectors 时由 resolveBlochVectors 调用。
  *
  * 采用 little-endian 位序（与 Qiskit 一致）：索引 idx 的第 i 位对应 qubit i。
  * 对 qubit i 求约化密度矩阵 ρ = 1/2 (I + xσx + yσy + zσz)：

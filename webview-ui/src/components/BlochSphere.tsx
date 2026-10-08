@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from '../store/useStore';
 import type { BlochVector } from '../utils/bloch';
-import { getBlochVectors } from '../utils/bloch';
+import { resolveBlochVectors } from '../utils/bloch';
 
 /** 轨迹保留的历史步数（含当前步） */
 const HISTORY_LENGTH = 5;
@@ -96,22 +96,33 @@ export function BlochSphere() {
     return null;
   }
 
-  const vectors = getBlochVectors(current.statevector, numQubits);
+  // 优先消费 engine 经 IR 下发的 Bloch 向量；仅旧 payload 时前端补算
+  const { vectors, source } = resolveBlochVectors(current, numQubits);
 
   // 历史轨迹：最近 HISTORY_LENGTH 步（不含当前步，当前步由箭头表示）
   const historyStart = Math.max(0, currentStep - HISTORY_LENGTH + 1);
   const history = steps
     .slice(historyStart, currentStep)
-    .map((step) => getBlochVectors(step.statevector, numQubits));
+    .map((step) => resolveBlochVectors(step, numQubits).vectors);
+
+  const purities = current.purities ?? [];
+  const entropies = current.qubit_entropies ?? [];
 
   return (
-    <div className="bloch-grid">
+    <div className="bloch-grid" data-source={source}>
       {vectors.map((vector, qubit) => (
         <div className="bloch-cell" key={qubit}>
           <Canvas camera={{ position: [1.8, 1.4, 2.2], fov: 45 }}>
             <BlochScene vector={vector} trail={history.map((frame) => frame[qubit]).filter(Boolean)} />
           </Canvas>
-          <span className="bloch-label">q{qubit}</span>
+          <span
+            className="bloch-label"
+            title={source === 'engine' ? 'Computed by qco-engine' : 'Computed in the webview (legacy payload)'}
+          >
+            q{qubit}
+            {purities[qubit] !== undefined && ` · P=${purities[qubit].toFixed(3)}`}
+            {entropies[qubit] !== undefined && ` · S=${entropies[qubit].toFixed(3)}`}
+          </span>
         </div>
       ))}
     </div>

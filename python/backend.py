@@ -175,9 +175,46 @@ def _as_complex_pair(value: Any) -> list[float]:
     return [0.0, 0.0]
 
 
+def _float_list(values: Any) -> list[float]:
+    """Coerce a per-qubit scalar track (purities / entropies) into floats."""
+    return [float(value) for value in (values or [])]
+
+
+def _bloch_list(values: Any) -> list[list[float]]:
+    """Coerce engine Bloch vectors into ``[x, y, z]`` triples (malformed entries dropped)."""
+    return [
+        [float(vector[0]), float(vector[1]), float(vector[2])]
+        for vector in (values or [])
+        if isinstance(vector, (list, tuple)) and len(vector) >= 3
+    ]
+
+
+def _amplitude_snapshot(amplitude: Dict[str, Any], fallback_total_basis: int) -> Dict[str, Any]:
+    """Pass the engine's sparse top-k AmplitudeSnapshot through unchanged in meaning.
+
+    ``magnitudes`` are |amp| (not probabilities) and ``phases`` are arg(amp) in
+    radians, exactly as the engine's AmplitudeProjector emits them.
+    """
+    return {
+        "basis_indices": [int(index) for index in (amplitude.get("basis_indices") or [])],
+        "magnitudes": _float_list(amplitude.get("magnitudes")),
+        "phases": _float_list(amplitude.get("phases")),
+        "total_basis": int(amplitude.get("total_basis") or fallback_total_basis),
+    }
+
+
 def build_render_payload(circuit: Any, decoded: Dict[str, Any]) -> Dict[str, Any]:
-    """Convert decoded IR into the render-ready structure (TDD 2.1)."""
+    """Convert decoded IR into the render-ready structure (TDD 2.1).
+
+    Besides the statevector, every step carries the engine-computed State
+    Inspector metrics (``bloch_vectors`` / ``purities`` / ``qubit_entropies``)
+    and the Amplitude top-k snapshot, so the webview renders engine values
+    instead of recomputing them. They stay populated even when the engine drops
+    the statevector for large circuits (``max_qubits_for_statevector``).
+    """
     decoded_steps = decoded.get("steps", []) or []
+    num_qubits = int(getattr(circuit, "num_qubits", 0) or 0)
+    full_basis = 1 << num_qubits if num_qubits else 0
 
     gates = [
         {
@@ -210,18 +247,22 @@ def build_render_payload(circuit: Any, decoded: Dict[str, Any]) -> Dict[str, Any
                 "statevector": statevector,
                 "edges": edges,
                 "global_entropy": float(entanglement.get("global_entropy", 0.0) or 0.0),
+                "bloch_vectors": _bloch_list(state.get("bloch_vectors")),
+                "purities": _float_list(state.get("purities")),
+                "qubit_entropies": _float_list(state.get("entropies")),
+                "amplitude": _amplitude_snapshot(step.get("amplitude") or {}, full_basis),
             }
         )
 
     return {
         "metadata": {
-            "n_qubits": int(getattr(circuit, "num_qubits", 0) or 0),
+            "n_qubits": num_qubits,
             "total_steps": len(steps),
             "depth": int(circuit.depth()) if hasattr(circuit, "depth") else len(steps),
         },
         "circuit_layout": {
             "gates": gates,
-            "num_qubits": int(getattr(circuit, "num_qubits", 0) or 0),
+            "num_qubits": num_qubits,
             "width": len(steps),
         },
         "steps": steps,

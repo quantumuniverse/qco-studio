@@ -11,10 +11,21 @@
 | 视图 | 说明 |
 | --- | --- |
 | 电路图 | Canvas 绘制 qubit 轨道与门，当前步橙色高亮并自动滚动居中；可直接点击/拖动电路跳步 |
-| Bloch 球 | 每个 qubit 一个 3D 球（Three.js），含坐标轴、态向量箭头与最近 5 步的半透明轨迹 |
-| 增强热力图 | \|振幅\|² 热力图（行=步骤，列=计算基），下方“态空间尺子”可框选基态区间，纵轴滚轮滚动时间窗口，悬停显示数值 |
+| Bloch 球 | 每个 qubit 一个 3D 球（Three.js），含坐标轴、态向量箭头与最近 5 步的半透明轨迹；球下标签 `q{n} · P=… · S=…` 显示纯度与单比特熵 |
+| 增强热力图 | \|振幅\|² 热力图（行=步骤，列=计算基），下方“态空间尺子”可框选基态区间，纵轴滚轮滚动时间窗口，悬停显示数值；尺子下方标注数据来源 |
 | 动态纠缠图 | D3 力导向图，边宽与颜色随纠缠值（互信息）变化，切换步骤时平滑过渡 |
 | 侧边栏 | `QCO Metadata` 实时显示 qubits / 总门数 / depth / 当前门 / 全局熵 |
+
+### 数据来源
+
+Bloch 向量、纯度、单比特熵和振幅快照都由 qco-engine 计算，Webview 直接使用，不再重复计算：
+
+- **Bloch 球**：使用 engine 的 `bloch_vectors`；旧版 engine 的 payload 没有这个字段时，从态向量现算（悬停标签可看到来源）。
+- **热力图**按顺序选择数据源，并在尺子下方标注：
+  - `qco-engine amplitude`：engine 的 top-k 快照覆盖全部基态（n ≤ 6，k = min(64, 2ⁿ)）；
+  - `statevector |ψ|²`：快照不完整（7–12 比特），用态向量计算；
+  - `qco-engine top-k`：没有态向量时，只画各步 top-k 的并集列，未进入某步 top-k 的格子按 0 显示。
+- **超过 12 比特**：engine 进入 summary mode，不产出逐门快照，面板没有逐步数据。
 
 触发方式：
 
@@ -109,6 +120,10 @@ VSCode Extension Host (TypeScript)
                 │
         python/backend.py  AST/exec 载入线路 → QCObserver → encode_ir → decode_ir → 渲染就绪 JSON
 ```
+
+渲染就绪 JSON 的每个 step 包含 `statevector`、`edges`、`global_entropy`，以及 engine 计算的
+`bloch_vectors`、`purities`、`qubit_entropies` 和 `amplitude{basis_indices, magnitudes, phases, total_basis}`，
+字段说明见 `.docs/TDD.md` §2.1。
 
 消息协议：宿主 → Webview `LOAD_DATA`；Webview → 宿主 `VIEW_READY`、`STEP_JUMP`。
 

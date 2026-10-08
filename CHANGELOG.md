@@ -1,5 +1,21 @@
 # Change Log
 
+## [Unreleased]
+
+State Inspector 与振幅热力图改为使用 qco-engine 的计算结果。
+
+### Added
+
+- 渲染就绪 JSON 每步新增 `bloch_vectors`、`purities`、`qubit_entropies`、`amplitude`（engine top-k 快照），由 `python/backend.py` 从 IR 透传
+- Bloch 球标签显示纯度与单比特熵（`q{n} · P=… · S=…`），悬停显示数值来源
+- 热力图尺子下方标注数据来源：`qco-engine amplitude` / `statevector |ψ|²` / `qco-engine top-k`
+
+### Changed
+
+- Bloch 向量优先使用 engine 的值，仅在 payload 缺少该字段时从态向量现算
+- 热力图在 engine 快照覆盖全部基态时直接使用快照；快照不完整时用态向量；没有态向量时只画 top-k 并集列
+- 需要 qco-engine 含 State Inspector / Amplitude tracks 的版本；旧版 engine 仍可使用（走前端现算）
+
 ## [0.1.0] — 2026-09-09
 
 首个可运行版本：CodeLens 触发观测 + 四视图回放 + 侧边栏元数据。

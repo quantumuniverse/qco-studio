@@ -231,6 +231,13 @@ button:hover {
   margin-top: 2px;
 }
 
+/* 热力图数据来源标注（engine / statevector / engine top-k） */
+.heatmap-source {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
 /* --- 纠缠图 --- */
 .entanglement {
   width: 100%;

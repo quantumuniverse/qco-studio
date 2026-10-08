@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useElementWidth } from '../hooks/useElementWidth';
+import type { ProbabilitySource } from '../utils/amplitude';
+import { buildProbabilityGrid } from '../utils/amplitude';
 
 /** 纵轴滚动窗口：一次最多显示最近 20 步 */
 const VISIBLE_STEPS = 20;
@@ -24,9 +26,16 @@ interface HoverInfo {
   step: number;
   basis: number;
   value: number;
+  phase: number | null;
   x: number;
   y: number;
 }
+
+const SOURCE_LABEL: Record<ProbabilitySource, string> = {
+  engine: 'source: qco-engine amplitude',
+  statevector: 'source: statevector |ψ|²',
+  'engine-topk': 'source: qco-engine top-k (other basis states not shown)'
+};
 
 function probabilityColor(value: number): string {
   const clamped = Math.min(Math.max(value, 0), 1);
@@ -49,15 +58,16 @@ export function Heatmap() {
   const rulerRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ mode: DragMode; startX: number; origin: Range } | null>(null);
 
-  /** magnitudes[step][basis] = |振幅|² */
-  const magnitudes = useMemo(
-    () => steps.map((step) => step.statevector.map(([real, imag]) => real * real + imag * imag)),
-    [steps]
-  );
-
-  const totalBasis = magnitudes[0]?.length ?? 0;
-  const totalSteps = magnitudes.length;
   const numQubits = metadata?.n_qubits ?? 0;
+
+  /** 优先消费 engine 振幅快照；快照不完整时回退态向量；大电路无态向量时用 top-k 稀疏列 */
+  const grid = useMemo(() => buildProbabilityGrid(steps, numQubits), [steps, numQubits]);
+
+  /** magnitudes[step][col] = |振幅|²；col → 基底索引见 basisOf */
+  const magnitudes = grid?.probs ?? [];
+  const columnCount = grid?.basis.length ?? 0;
+  const totalSteps = grid ? magnitudes.length : 0;
+  const basisOf = (col: number) => grid?.basis[col] ?? col;
 
   const cols = Math.max(range.end - range.start + 1, 1);
 
@@ -75,10 +85,10 @@ export function Heatmap() {
   const canvasWidth = LABEL_WIDTH + cols * cellWidth;
 
   useEffect(() => {
-    setRange({ start: 0, end: Math.max(totalBasis - 1, 0) });
+    setRange({ start: 0, end: Math.max(columnCount - 1, 0) });
     setTimeStart(0);
     setHover(null);
-  }, [totalBasis, totalSteps]);
+  }, [columnCount, totalSteps]);
 
   // 当前步超出可视窗口时，跟随滚动
   useEffect(() => {
@@ -94,7 +104,7 @@ export function Heatmap() {
   // 绘制主热力图
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || totalBasis === 0 || totalSteps === 0) {
+    if (!canvas || columnCount === 0 || totalSteps === 0) {
       return;
     }
 
@@ -152,12 +162,12 @@ export function Heatmap() {
     ctx.textBaseline = 'middle';
     for (let col = 0; col < cols; col += labelStep) {
       ctx.fillText(
-        String(range.start + col),
+        String(basisOf(range.start + col)),
         LABEL_WIDTH + col * cellWidth + cellWidth / 2,
         HEADER_HEIGHT / 2
       );
     }
-  }, [magnitudes, range, timeStart, currentStep, totalBasis, totalSteps, cols, cellWidth, canvasWidth]);
+  }, [grid, magnitudes, range, timeStart, currentStep, columnCount, totalSteps, cols, cellWidth, canvasWidth]);
 
   // 纵轴：滚轮滚动时间窗口
   useEffect(() => {
@@ -186,11 +196,11 @@ export function Heatmap() {
     const onMouseMove = (event: MouseEvent) => {
       const drag = dragRef.current;
       const ruler = rulerRef.current;
-      if (!drag || !drag.mode || !ruler || totalBasis === 0) {
+      if (!drag || !drag.mode || !ruler || columnCount === 0) {
         return;
       }
 
-      const pxPerBasis = ruler.clientWidth / totalBasis;
+      const pxPerBasis = ruler.clientWidth / columnCount;
       const delta = Math.round((event.clientX - drag.startX) / pxPerBasis);
       const { start, end } = drag.origin;
 
@@ -202,11 +212,11 @@ export function Heatmap() {
       } else if (drag.mode === 'right') {
         setRange({
           start,
-          end: Math.max(Math.min(end + delta, totalBasis - 1), start + MIN_WINDOW - 1)
+          end: Math.max(Math.min(end + delta, columnCount - 1), start + MIN_WINDOW - 1)
         });
       } else {
         const width = end - start;
-        const nextStart = Math.min(Math.max(start + delta, 0), totalBasis - 1 - width);
+        const nextStart = Math.min(Math.max(start + delta, 0), columnCount - 1 - width);
         setRange({ start: nextStart, end: nextStart + width });
       }
     };
@@ -221,7 +231,7 @@ export function Heatmap() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [totalBasis]);
+  }, [columnCount]);
 
   const startDrag = (mode: DragMode) => (event: React.MouseEvent) => {
     event.preventDefault();
@@ -231,7 +241,7 @@ export function Heatmap() {
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || totalBasis === 0) {
+    if (!canvas || columnCount === 0) {
       return;
     }
 
@@ -248,17 +258,18 @@ export function Heatmap() {
       return;
     }
 
-    const basis = range.start + col;
+    const column = range.start + col;
     const stepIndex = timeStart + row;
-    if (basis >= totalBasis || stepIndex >= totalSteps) {
+    if (column >= columnCount || stepIndex >= totalSteps) {
       setHover(null);
       return;
     }
 
     setHover({
       step: stepIndex,
-      basis,
-      value: magnitudes[stepIndex]?.[basis] ?? 0,
+      basis: basisOf(column),
+      value: magnitudes[stepIndex]?.[column] ?? 0,
+      phase: grid?.phases[stepIndex]?.[column] ?? null,
       x: LABEL_WIDTH + col * cellWidth + cellWidth,
       y: HEADER_HEIGHT + row * CELL_HEIGHT
     });
@@ -266,7 +277,7 @@ export function Heatmap() {
 
   const rows = Math.min(VISIBLE_STEPS, Math.max(totalSteps - timeStart, 0));
 
-  if (totalBasis === 0 || totalSteps === 0) {
+  if (columnCount === 0 || totalSteps === 0) {
     return null;
   }
 
@@ -283,6 +294,7 @@ export function Heatmap() {
           <div className="heatmap-tooltip" style={{ left: hover.x, top: hover.y }}>
             |{hover.basis.toString(2).padStart(numQubits, '0')}⟩ step {hover.step}: |ψ|²=
             {hover.value.toFixed(4)}
+            {hover.phase !== null && hover.value > 0 && ` φ=${hover.phase.toFixed(3)}`}
           </div>
         )}
       </div>
@@ -293,8 +305,8 @@ export function Heatmap() {
           <div
             className="selection-window"
             style={{
-              left: `${(range.start / Math.max(totalBasis, 1)) * 100}%`,
-              width: `${(cols / Math.max(totalBasis, 1)) * 100}%`
+              left: `${(range.start / Math.max(columnCount, 1)) * 100}%`,
+              width: `${(cols / Math.max(columnCount, 1)) * 100}%`
             }}
           >
             <div className="handle left" onMouseDown={startDrag('left')} />
@@ -303,12 +315,15 @@ export function Heatmap() {
           </div>
         </div>
         <div className="ruler-labels">
-          <span>|0…0⟩</span>
+          <span>{grid?.source === 'engine-topk' ? `|${basisOf(0)}⟩` : '|0…0⟩'}</span>
           <span>
-            basis {range.start} – {range.end} / {Math.max(totalBasis - 1, 0)}
+            {grid?.source === 'engine-topk'
+              ? `columns ${range.start} – ${range.end} / ${Math.max(columnCount - 1, 0)} of ${grid.totalBasis} basis`
+              : `basis ${range.start} – ${range.end} / ${Math.max(columnCount - 1, 0)}`}
           </span>
-          <span>|1…1⟩</span>
+          <span>{grid?.source === 'engine-topk' ? `|${basisOf(columnCount - 1)}⟩` : '|1…1⟩'}</span>
         </div>
+        {grid && <div className="heatmap-source">{SOURCE_LABEL[grid.source]}</div>}
       </div>
     </div>
   );
