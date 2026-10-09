@@ -238,7 +238,7 @@ button:hover {
   margin-top: 2px;
 }
 
-/* --- 纠缠图 --- */
+/* --- 量子关联图 --- */
 .entanglement {
   width: 100%;
   border: 1px solid var(--vscode-panel-border, #3c3c3c);

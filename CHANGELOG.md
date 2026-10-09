@@ -29,7 +29,7 @@ State Inspector 与振幅热力图改为使用 qco-engine 的计算结果。
 - 视图一：电路图（Canvas，当前步高亮 + 自动滚动 + 点击/拖动跳步）
 - 视图二：Bloch 球（Three.js，态向量 + 历史轨迹）
 - 视图三：增强热力图（态空间尺子 + 纵向时间窗口 + 悬停数值）
-- 视图四：动态纠缠图（D3 力导向，边宽/颜色随纠缠值过渡）
+- 视图四：动态量子关联图（D3 力导向，边宽/颜色随关联值过渡）
 - 侧边栏 `QCO Metadata`（qubits / 总门数 / depth / 当前门 / 全局熵）
 - 命令 `qco.showPanel`、`qco.observe`、`qco.check`
 - 设置 `qco.pythonPath`
