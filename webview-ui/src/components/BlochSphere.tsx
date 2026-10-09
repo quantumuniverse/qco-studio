@@ -96,20 +96,20 @@ export function BlochSphere() {
     return null;
   }
 
-  // 优先消费 engine 经 IR 下发的 Bloch 向量；仅旧 payload 时前端补算
-  const { vectors, source } = resolveBlochVectors(current, numQubits);
+  // 消费 engine 经 IR 下发的 Bloch 向量
+  const vectors = resolveBlochVectors(current, numQubits);
 
   // 历史轨迹：最近 HISTORY_LENGTH 步（不含当前步，当前步由箭头表示）
   const historyStart = Math.max(0, currentStep - HISTORY_LENGTH + 1);
   const history = steps
     .slice(historyStart, currentStep)
-    .map((step) => resolveBlochVectors(step, numQubits).vectors);
+    .map((step) => resolveBlochVectors(step, numQubits));
 
   const purities = current.purities ?? [];
   const entropies = current.qubit_entropies ?? [];
 
   return (
-    <div className="bloch-grid" data-source={source}>
+    <div className="bloch-grid">
       {vectors.map((vector, qubit) => (
         <div className="bloch-cell" key={qubit}>
           <Canvas camera={{ position: [1.8, 1.4, 2.2], fov: 45 }}>
@@ -117,7 +117,7 @@ export function BlochSphere() {
           </Canvas>
           <span
             className="bloch-label"
-            title={source === 'engine' ? 'Computed by qco-engine' : 'Computed in the webview (legacy payload)'}
+            title="Computed by qco-engine"
           >
             q{qubit}
             {purities[qubit] !== undefined && ` · P=${purities[qubit].toFixed(3)}`}

@@ -26,6 +26,12 @@
     "onLanguage:python"
   ],
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "QCO observes quantum circuits by executing Python files. In untrusted workspaces, circuit observation is disabled to prevent arbitrary code execution."
+    }
+  },
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -68,6 +74,13 @@
           "type": "string",
           "default": "python",
           "description": "Path to the python interpreter used to run python/backend.py (e.g. python, python3, or an absolute path)."
+        },
+        "qco.executionTimeout": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 1000,
+          "maximum": 300000,
+          "description": "Maximum time in milliseconds to wait for the Python backend to complete observation (default: 30000). The child process is killed on timeout."
         }
       }
     }

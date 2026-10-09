@@ -4,9 +4,36 @@ import { QCOCodeLensProvider } from './codelens/provider';
 import { QCOWebviewManager } from './panel/manager';
 import { QCOMetadataProvider } from './sidebar/provider';
 
-/** 从命令面板触发、未携带变量名时的兜底值 */
+/** 从命令面板触发、未携带变量名时的兆底值 */
 const DEFAULT_VARIABLE_NAME = 'qc';
 const INSTALL_ACTION = '打开终端安装依赖';
+const RUN_ACTION = '继续执行';
+
+/** 检查当前工作区是否受信任；未信任时提示并返回 false */
+function requireWorkspaceTrust(): boolean {
+    if (vscode.workspace.isTrusted) {
+        return true;
+    }
+    void vscode.window.showWarningMessage(
+        'QCO: 电路观测会执行 Python 文件。请先信任当前工作区后再运行。',
+        '信任此工作区'
+    ).then((choice) => {
+        if (choice === '信任此工作区') {
+            void vscode.commands.executeCommand('workbench.action.trustWorkspace');
+        }
+    });
+    return false;
+}
+
+/** 执行前确认对话框：防御纵深，即使工作区已信任也显式确认 */
+async function confirmExecution(filePath: string, variableName: string): Promise<boolean> {
+    const choice = await vscode.window.showWarningMessage(
+        `QCO 即将执行 ${filePath} 中的 Python 代码（变量: ${variableName}）。是否继续？`,
+        { modal: true },
+        RUN_ACTION
+    );
+    return choice === RUN_ACTION;
+}
 
 export function activate(context: vscode.ExtensionContext): void {
     console.log('Extension activated: qco-studio');
@@ -26,16 +53,31 @@ export function activate(context: vscode.ExtensionContext): void {
     const observeCommand = vscode.commands.registerCommand(
         'qco.observe',
         async (filePath?: string, variableName?: string) => {
+            // 安全门禁 1：工作区信任
+            if (!requireWorkspaceTrust()) {
+                return;
+            }
+
             const target = resolveTarget(filePath, variableName);
             if (!target) {
+                return;
+            }
+
+            // 安全门禁 2：执行前确认
+            const confirmed = await confirmExecution(target.filePath, target.variableName);
+            if (!confirmed) {
+                channel.appendLine('[observe] cancelled by user (confirmation dialog)');
                 return;
             }
 
             channel.show(true);
             channel.appendLine(`[observe] file=${target.filePath} variable=${target.variableName}`);
 
+            // 安全门禁 3：超时/取消
+            const cancellationSource = new vscode.CancellationTokenSource();
             const result = await runObservation(target.filePath, target.variableName, {
-                onStderr: (chunk) => channel.append(chunk)
+                onStderr: (chunk) => channel.append(chunk),
+                token: cancellationSource.token
             });
 
             channel.appendLine(`[observe] status=${result.status}`);
@@ -100,6 +142,14 @@ export function activate(context: vscode.ExtensionContext): void {
             channel.appendLine(`[env] ${environment.issue}: ${environment.message}`);
         }
     });
+
+    // 工作区信任状态变化时刷新 CodeLens（信任后显示 Observe 按钮，取消信任后隐藏）
+    context.subscriptions.push(
+        vscode.workspace.onDidGrantWorkspaceTrust(() => {
+            // 触发 CodeLens 重新计算
+            void vscode.commands.executeCommand('vscode.executeCodeLensProvider');
+        })
+    );
 
     context.subscriptions.push(
         channel,

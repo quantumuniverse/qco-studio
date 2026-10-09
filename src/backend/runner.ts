@@ -15,6 +15,10 @@ export interface RunObservationOptions {
     pythonPath?: string;
     /** Python stderr 回调，便于写入 OutputChannel */
     onStderr?: (chunk: string) => void;
+    /** 取消令牌：用户手动取消或超时触发 */
+    token?: vscode.CancellationToken;
+    /** 超时毫秒数，默认读取配置 qco.executionTimeout（30000） */
+    timeoutMs?: number;
 }
 
 export type EnvironmentIssue = 'ok' | 'python-missing' | 'dependency-missing' | 'unknown';
@@ -30,7 +34,16 @@ interface BackendRunResult {
     stderr: string;
     code: number | null;
     spawnError?: NodeJS.ErrnoException;
+    timedOut?: boolean;
+    cancelled?: boolean;
+    truncated?: boolean;
 }
+
+/** stdout/stderr 累积上限（10 MB），防止恶意文件输出导致 OOM */
+const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
+
+/** 默认超时（30 s），可被 qco.executionTimeout 配置覆盖 */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** backend.py 位于 <extension>/python/backend.py，打包后 __dirname 为 dist/ */
 export function getBackendScriptPath(): string {
@@ -45,37 +58,85 @@ export function resolvePythonPath(explicit?: string): string {
     return configured && configured.trim().length > 0 ? configured : 'python';
 }
 
+function resolveTimeoutMs(explicit?: number): number {
+    if (explicit !== undefined) {
+        return Math.max(1_000, Math.min(300_000, explicit));
+    }
+    const configured = vscode.workspace.getConfiguration('qco').get<number>('executionTimeout');
+    if (configured !== undefined && configured >= 1_000) {
+        return Math.min(300_000, configured);
+    }
+    return DEFAULT_TIMEOUT_MS;
+}
+
 function runBackend(
     args: string[],
     python: string,
-    onStderr?: (chunk: string) => void
+    options: { onStderr?: (chunk: string) => void; token?: vscode.CancellationToken; timeoutMs?: number } = {}
 ): Promise<BackendRunResult> {
     const script = getBackendScriptPath();
+    const timeoutMs = resolveTimeoutMs(options.timeoutMs);
 
     return new Promise<BackendRunResult>((resolve) => {
         const child = spawn(python, args, { cwd: path.dirname(script) });
 
         let stdout = '';
         let stderr = '';
+        let truncated = false;
+        let settled = false;
+
+        const settle = (result: BackendRunResult): void => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            tokenSub?.dispose();
+            resolve(result);
+        };
+
+        // Timeout: kill child after timeoutMs
+        const timer = setTimeout(() => {
+            child.kill('SIGTERM');
+            // Give the process a brief grace period, then force-kill
+            const forceKill = setTimeout(() => {
+                try { child.kill('SIGKILL'); } catch { /* already dead */ }
+            }, 2_000);
+            forceKill.unref();
+            settle({ stdout, stderr, code: null, timedOut: true, truncated });
+        }, timeoutMs);
+        timer.unref();
+
+        // Cancellation: user-triggered via CancellationToken
+        const tokenSub = options.token?.onCancellationRequested(() => {
+            child.kill('SIGTERM');
+            settle({ stdout, stderr, code: null, cancelled: true, truncated });
+        });
 
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
 
         child.stdout.on('data', (chunk: string) => {
-            stdout += chunk;
+            if (!truncated && stdout.length < MAX_OUTPUT_BYTES) {
+                stdout += chunk;
+            }
+            if (!truncated && stdout.length >= MAX_OUTPUT_BYTES) {
+                truncated = true;
+                stdout = stdout.slice(0, MAX_OUTPUT_BYTES);
+            }
         });
 
         child.stderr.on('data', (chunk: string) => {
-            stderr += chunk;
-            onStderr?.(chunk);
+            if (!truncated && stderr.length < MAX_OUTPUT_BYTES) {
+                stderr += chunk;
+            }
+            options.onStderr?.(chunk);
         });
 
         child.on('error', (err: NodeJS.ErrnoException) => {
-            resolve({ stdout, stderr, code: null, spawnError: err });
+            settle({ stdout, stderr, code: null, spawnError: err, truncated });
         });
 
         child.on('close', (code: number | null) => {
-            resolve({ stdout, stderr, code });
+            settle({ stdout, stderr, code, truncated });
         });
     });
 }
@@ -100,11 +161,25 @@ export async function runObservation(
     const python = resolvePythonPath(options.pythonPath);
     const script = getBackendScriptPath();
 
-    const { stdout, stderr, code, spawnError } = await runBackend(
+    const { stdout, stderr, code, spawnError, timedOut, cancelled, truncated } = await runBackend(
         [script, '--file', filePath, '--variable', variableName],
         python,
-        options.onStderr
+        { onStderr: options.onStderr, token: options.token, timeoutMs: options.timeoutMs }
     );
+
+    if (timedOut) {
+        return {
+            status: 'error',
+            message: `Observation timed out (>${resolveTimeoutMs(options.timeoutMs)} ms). The Python process was killed. Consider increasing 'qco.executionTimeout' for large circuits.`
+        };
+    }
+
+    if (cancelled) {
+        return {
+            status: 'error',
+            message: 'Observation was cancelled by the user.'
+        };
+    }
 
     if (spawnError) {
         return {
@@ -157,7 +232,7 @@ export async function checkEnvironment(
         };
     }
 
-    const health = await runBackend([script, '--route', '/health'], python, options.onStderr);
+    const health = await runBackend([script, '--route', '/health'], python, { onStderr: options.onStderr });
     const payload = extractJsonLine(health.stdout);
 
     if (!payload) {

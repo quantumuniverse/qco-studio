@@ -20,6 +20,11 @@ export class QCOCodeLensProvider implements vscode.CodeLensProvider {
             return [];
         }
 
+        // 未信任工作区不显示执行按钮，防止用户误触发代码执行
+        if (!vscode.workspace.isTrusted) {
+            return [];
+        }
+
         const text = document.getText();
         const lenses: vscode.CodeLens[] = [];
 
