@@ -4,6 +4,7 @@
 .git/**
 .gitignore
 .gitattributes
+.qoder/**
 
 # 源码与构建中间产物（运行时只需要 dist/extension.js 与 out/webview 产物）
 node_modules/**
