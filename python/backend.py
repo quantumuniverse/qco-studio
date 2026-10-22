@@ -272,7 +272,8 @@ def build_render_payload(circuit: Any, decoded: Dict[str, Any]) -> Dict[str, Any
 @app.post("/observe")
 def observe(request: ObservationRequest) -> ObservationResponse:
     """Run the observation pipeline for a circuit variable in a python file."""
-    from qco_engine import QCObserver, decode_ir, encode_ir  # lazy -> friendly errors
+    from qco_engine import QCObserver
+    from qco_ir import decode_ir, encode_ir  # lazy -> friendly errors
 
     if not request.file or not request.variable:
         raise ValueError("Both --file and --variable are required for /observe")
@@ -303,6 +304,12 @@ def health(request: ObservationRequest) -> ObservationResponse:
         info["ir_version"] = getattr(qco, "IR_VERSION", "unknown")
     except ImportError as exc:  # pragma: no cover - reported to the extension host
         info["qco_engine"] = f"missing ({exc})"
+    try:
+        import qco_ir
+
+        info["qco_ir"] = getattr(qco_ir, "__version__", "unknown")
+    except ImportError as exc:  # pragma: no cover - reported to the extension host
+        info["qco_ir"] = f"missing ({exc})"
     return ObservationResponse(status="success", data=info)
 
 

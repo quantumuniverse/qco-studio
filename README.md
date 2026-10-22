@@ -39,10 +39,11 @@ Bloch 向量、纯度、单比特熵和振幅快照都由 qco-engine 计算，We
 > **安装 `.vsix` 不会自动安装 Python 依赖**，请先手动执行（建议在虚拟环境中）：
 
 ```bash
-# 直接安装（推荐，不依赖仓库文件）
+# 直接安装（qco-engine 在 TestPyPI；qco-ir 暂未发布到索引，需从源码安装）
 pip install qco-engine qiskit
+pip install ../qco-ir        # IR 契约包；待其发布到 TestPyPI 后可改从索引安装
 
-# 或克隆仓库后按清单安装
+# 或克隆仓库后按清单安装（python/requirements.txt 已含 qco-ir）
 pip install -r python/requirements.txt
 ```
 
@@ -118,12 +119,15 @@ VSCode Extension Host (TypeScript)
   ├─ Webview 面板          React + Vite 产物，四视图联动
   └─ 侧边栏 TreeView       元数据看板
                 │
-        python/backend.py  AST/exec 载入线路 → QCObserver → encode_ir → decode_ir → 渲染就绪 JSON
+        python/backend.py  AST/exec 载入线路 → QCObserver → qco-ir 编码/解码 → 渲染就绪 JSON
 ```
 
 渲染就绪 JSON 的每个 step 包含 `statevector`、`edges`、`global_entropy`，以及 engine 计算的
 `bloch_vectors`、`purities`、`qubit_entropies` 和 `amplitude{basis_indices, magnitudes, phases, total_basis}`，
 字段说明见 `.docs/TDD.md` §2.1。
+
+> IR 契约（模型 / 编解码 / golden vectors）由独立包 `qco-ir` 提供（Python 侧经
+> `python/requirements.txt` 安装）；engine 与 notebook、studio 三个产品只共享该契约，互不依赖。
 
 消息协议：宿主 → Webview `LOAD_DATA`；Webview → 宿主 `VIEW_READY`、`STEP_JUMP`。
 

@@ -1,2 +1,3 @@
 qco-engine>=0.1.0
+qco-ir>=0.1.0
 qiskit>=1.0.0
