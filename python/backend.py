@@ -17,8 +17,9 @@ import argparse
 import json
 import sys
 import traceback
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 # --------------------------------------------------------------------------- #
 # Data models
@@ -28,10 +29,10 @@ from typing import Any, Callable, Dict, Optional
 class ObservationRequest:
     """Incoming request from the extension host."""
 
-    def __init__(self, file: str, variable: str, options: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, file: str, variable: str, options: dict[str, Any] | None = None) -> None:
         self.file = file
         self.variable = variable
-        self.options: Dict[str, Any] = options or {}
+        self.options: dict[str, Any] = options or {}
 
     def __repr__(self) -> str:
         return f"ObservationRequest(file={self.file!r}, variable={self.variable!r}, options={self.options!r})"
@@ -43,15 +44,15 @@ class ObservationResponse:
     def __init__(
         self,
         status: str = "success",
-        data: Optional[Dict[str, Any]] = None,
-        message: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        message: str | None = None,
     ) -> None:
         self.status = status
         self.data = data
         self.message = message
 
-    def to_dict(self) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {"status": self.status}
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {"status": self.status}
         if self.data is not None:
             payload["data"] = self.data
         if self.message is not None:
@@ -76,7 +77,7 @@ class App:
     """Minimal FastAPI-style container: handlers are bound to a route name."""
 
     def __init__(self) -> None:
-        self.routes: Dict[str, Handler] = {}
+        self.routes: dict[str, Handler] = {}
 
     def post(self, path: str) -> Callable[[Handler], Handler]:
         def decorator(handler: Handler) -> Handler:
@@ -145,7 +146,7 @@ def load_circuit(filepath: str, var_name: str) -> Any:
         raise FileNotFoundError(f"File not found: {filepath}")
 
     source = path.read_text(encoding="utf-8")
-    namespace: Dict[str, Any] = {"__name__": "__qco__", "__file__": str(path)}
+    namespace: dict[str, Any] = {"__name__": "__qco__", "__file__": str(path)}
 
     exec(compile(source, str(path), "exec"), namespace)  # noqa: S102 - required to build the circuit
 
@@ -189,7 +190,7 @@ def _bloch_list(values: Any) -> list[list[float]]:
     ]
 
 
-def _amplitude_snapshot(amplitude: Dict[str, Any], fallback_total_basis: int) -> Dict[str, Any]:
+def _amplitude_snapshot(amplitude: dict[str, Any], fallback_total_basis: int) -> dict[str, Any]:
     """Pass the engine's sparse top-k AmplitudeSnapshot through unchanged in meaning.
 
     ``magnitudes`` are |amp| (not probabilities) and ``phases`` are arg(amp) in
@@ -203,7 +204,7 @@ def _amplitude_snapshot(amplitude: Dict[str, Any], fallback_total_basis: int) ->
     }
 
 
-def build_render_payload(circuit: Any, decoded: Dict[str, Any]) -> Dict[str, Any]:
+def build_render_payload(circuit: Any, decoded: dict[str, Any]) -> dict[str, Any]:
     """Convert decoded IR into the render-ready structure (TDD 2.1).
 
     Besides the statevector, every step carries the engine-computed State
@@ -296,7 +297,7 @@ def observe(request: ObservationRequest) -> ObservationResponse:
 @app.post("/health")
 def health(request: ObservationRequest) -> ObservationResponse:
     """Environment diagnostics: python version / dependency availability."""
-    info: Dict[str, Any] = {"python": sys.version.split()[0]}
+    info: dict[str, Any] = {"python": sys.version.split()[0]}
     try:
         import qco_engine as qco
 
@@ -318,7 +319,7 @@ def health(request: ObservationRequest) -> ObservationResponse:
 # --------------------------------------------------------------------------- #
 
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="backend.py",
         description="QCO python backend: observe a QuantumCircuit and emit IR JSON on stdout.",
