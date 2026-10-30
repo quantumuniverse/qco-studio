@@ -2,7 +2,7 @@
   "name": "qco-studio",
   "displayName": "QCO: Quantum Circuit Observer",
   "description": "Visualize quantum circuit evolution step by step inside VSCode (circuit / bloch / heatmap / entanglement views).",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "qco",
   "license": "MIT",
   "icon": "resources/icon-128.png",
