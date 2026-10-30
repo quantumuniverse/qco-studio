@@ -1,3 +1,5 @@
-qco-engine>=0.1.0
+# 下限依据：backend.py 从 qco_ir 导入 decode_ir/encode_ir，engine 0.1.3 起才基于 qco-ir 契约
+# （0.1.0-0.1.2 自带内嵌 IR 实现、不依赖 qco-ir）。studio 未使用 T5/T2 新字段，无需更高下限。
+qco-engine>=0.1.3
 qco-ir>=0.1.0
 qiskit>=1.0.0
