@@ -39,15 +39,21 @@ Bloch 向量、纯度、单比特熵和振幅快照都由 qco-engine 计算，We
 > **安装 `.vsix` 不会自动安装 Python 依赖**，请先手动执行（建议在虚拟环境中）：
 
 ```bash
-# 直接安装（qco-engine / qco-ir 的已发布版在 TestPyPI，需挂 PyPI 作为补充索引）
-pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "qco-engine>=0.1.3" qiskit
+# 本系列已冻结公共索引上传（PyPI / TestPyPI 均不再接收新版本），两个依赖包只走私有通道。
 
-# 或克隆仓库后按清单安装（python/requirements.txt 已含 qco-ir；同样需挂上面两个索引）
-pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ -r python/requirements.txt
+# 前置：先装 qco-ir（engine 的硬依赖，需仓库读权限）
+pip install "qco-ir @ git+https://github.com/quantumuniverse/qco-ir@v0.1.3"
 
-# 若要配合 qco-engine 0.2.0（含噪声对比；已打 tag、尚未上传）：先从源码装同级 qco-ir 与 qco-engine
+# 再装 engine（0.2.0 含噪声对比）与 qiskit
+pip install "qco-engine @ git+https://github.com/quantumuniverse/qco-engine@v0.2.0" qiskit
+
+# 或从同一工作区的源码安装（开发时最常用；python/requirements.txt 另含 qiskit）
 # pip install -e ../qco-ir -e ../qco-engine
+# pip install -e ../qco-ir -e ../qco-engine -r python/requirements.txt
 ```
+
+> 公共索引上的 `qco-engine` 0.1.3 / `qco-ir` 0.1.1 是冻结前的历史版本，不满足当前源码的依赖地板，
+> 装了也会在首次观测时报契约字段缺失。
 
 若 Python 不在 PATH 中，或使用了虚拟环境，在设置里把 `qco.pythonPath` 设为解释器绝对路径，例如
 `C:\Users\me\.venvs\qco\Scripts\python.exe`。
